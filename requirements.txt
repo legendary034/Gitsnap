@@ -1,0 +1,8 @@
+pystray
+pynput
+Pillow
+requests
+win11toast
+pyperclip
+beautifulsoup4
+pywin32
