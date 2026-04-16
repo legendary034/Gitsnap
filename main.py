@@ -40,12 +40,12 @@ def on_copy(img):
 
 def on_upload(img):
     def process():
-        link = upload_image(img)
+        link, error = upload_image(img)
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:
             from win11toast import toast
-            toast("Upload Failed", "Could not upload image. Make sure config.json is valid.")
+            toast("Upload Failed", error or "Could not upload image.")
     threading.Thread(target=process, daemon=True).start()
 
 class App:

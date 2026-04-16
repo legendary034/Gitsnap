@@ -43,12 +43,23 @@ def upload_image(img):
         }
         
         response = requests.put(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
         
+        if response.status_code >= 400:
+            error_msg = f"GitHub API {response.status_code}: {response.text}"
+            with open("debug_log.txt", "a") as f:
+                f.write(f"Upload failed - Status: {response.status_code}, Response: {response.text}\n")
+            
+            if response.status_code == 404:
+                return (None, f"Not Found - check branch '{branch}' or repository name.")
+            elif response.status_code == 401:
+                return (None, "Unauthorized - check your GitHub Token.")
+            return (None, f"Error: {response.status_code}")
+            
         # Return raw URL
         raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}"
-        return raw_url
+        return (raw_url, None)
 
     except Exception as e:
-        print(f"Upload failed: {e}")
-        return None
+        with open("debug_log.txt", "a") as f:
+            f.write(f"Upload Exception: {e}\n")
+        return (None, str(e))
