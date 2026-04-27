@@ -72,13 +72,18 @@ class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.withdraw()
-        # Set taskbar / alt-tab icon
+        # Set icon for root AND all future Toplevel windows (Settings, etc.)
         try:
-            ico = _icon_path("gitsnap_icon.ico")
-            if os.path.exists(ico):
-                self.root.wm_iconbitmap(ico)
-        except Exception:
-            pass
+            from PIL import ImageTk
+            _png = _icon_path("gitsnap_icon.png")
+            with open("debug_log.txt", "a") as f:
+                f.write(f"Icon path: {_png} exists={os.path.exists(_png)}\n")
+            _pil = Image.open(_png).convert("RGBA")
+            self._app_icon = ImageTk.PhotoImage(_pil)   # must stay referenced
+            self.root.iconphoto(True, self._app_icon)   # True = apply to all Toplevels
+        except Exception as e:
+            with open("debug_log.txt", "a") as f:
+                f.write(f"Icon load error: {e}\n")
         self.root.bind("<<TriggerCapture>>", self.init_capture)
         self.root.bind("<<OpenSettings>>", self.open_settings)
         self.icon = None
