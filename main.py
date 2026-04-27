@@ -30,11 +30,26 @@ except Exception as e:
     os._exit(1)
 
 
+def _icon_path(filename):
+    """Resolve an asset path that works both from source and frozen exe."""
+    if getattr(sys, 'frozen', False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, filename)
+
+
 def create_tray_icon():
-    image = Image.new('RGB', (64, 64), color='white')
-    d = ImageDraw.Draw(image)
-    d.rectangle([16, 16, 48, 48], fill="blue", outline="black")
-    return image
+    try:
+        img = Image.open(_icon_path("gitsnap_icon.png")).convert("RGBA")
+        img = img.resize((64, 64), Image.LANCZOS)
+        return img
+    except Exception:
+        # Fallback: plain blue square
+        image = Image.new('RGB', (64, 64), color=(30, 80, 160))
+        d = ImageDraw.Draw(image)
+        d.rectangle([16, 16, 48, 48], fill="white", outline="white")
+        return image
 
 
 def on_copy(img):
@@ -56,6 +71,13 @@ class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.withdraw()
+        # Set taskbar / alt-tab icon
+        try:
+            ico = _icon_path("gitsnap_icon.ico")
+            if os.path.exists(ico):
+                self.root.wm_iconbitmap(ico)
+        except Exception:
+            pass
         self.root.bind("<<TriggerCapture>>", self.init_capture)
         self.root.bind("<<OpenSettings>>", self.open_settings)
         self.icon = None
