@@ -91,8 +91,9 @@ class SettingsWindow:
         self.locations_grid = tk.Frame(self.locations_frame)
         self.locations_grid.pack(fill="x")
         # Column min-sizes (pixels): Name, Token, Repo, Branch, Folder, Delete
-        for col, px in enumerate([100, 170, 150, 58, 80, 28]):
-            self.locations_grid.columnconfigure(col, minsize=px, weight=1 if col == 2 else 0)
+        # Total ≈ 80+130+120+52+65+26 = 473px  +  frame/padding ≈ 560px total
+        for col, px in enumerate([80, 130, 120, 52, 65, 26]):
+            self.locations_grid.columnconfigure(col, minsize=px, weight=0)
 
         self._loc_next_row = 0
         self._build_location_header()
@@ -151,10 +152,14 @@ class SettingsWindow:
         tk.Button(btn_frame, text="Cancel", command=self.window.destroy, width=10
                   ).pack(side="left", padx=6)
 
-        # Initial refresh of dropdowns, then size window
+        # Auto-size width to content; cap height at 90% of screen
         self._refresh_location_dropdowns()
         self.window.update_idletasks()
-        w, h = 660, min(self.inner.winfo_reqheight() + 30, 680)
+        req_w = self.inner.winfo_reqwidth() + 20   # +20 for scrollbar
+        req_h = self.inner.winfo_reqheight() + 20
+        max_h = int(self.window.winfo_screenheight() * 0.9)
+        w = max(req_w, 520)
+        h = min(req_h, max_h)
         sw = self.window.winfo_screenwidth()
         sh = self.window.winfo_screenheight()
         self.window.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
