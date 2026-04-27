@@ -26,7 +26,7 @@ def upload_image(img, word=None):
         folder = config.get("UPLOAD_FOLDER", "screenshots").strip("/")
         
         # Generate filename
-        filename_base = f"screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+        filename_base = f"screenshot_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"
         if word:
             filename = f"{filename_base}_{word}.png"
         else:
