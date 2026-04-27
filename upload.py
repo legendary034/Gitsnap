@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from config import load_config
 
-def upload_image(img, word=None):
+def upload_image(img, word=None, custom_folder=None):
     config = load_config()
     if not config or not config.get("GITHUB_TOKEN") or config.get("GITHUB_TOKEN") == "YOUR_PERSONAL_ACCESS_TOKEN_HERE":
         print("GitHub configuration is missing or incomplete.")
@@ -23,7 +23,11 @@ def upload_image(img, word=None):
         token = config.get("GITHUB_TOKEN")
         repo = config.get("GITHUB_REPO")
         branch = config.get("GITHUB_BRANCH", "main")
-        folder = config.get("UPLOAD_FOLDER", "screenshots").strip("/")
+        
+        if custom_folder:
+            folder = custom_folder.strip("/")
+        else:
+            folder = config.get("UPLOAD_FOLDER", "screenshots").strip("/")
         
         # Generate filename
         filename_base = f"screenshot_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"

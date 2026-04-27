@@ -38,9 +38,9 @@ def create_tray_icon():
 def on_copy(img):
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
 
-def on_upload(img, word=None):
+def on_upload(img, word=None, folder=None):
     def process():
-        link, error = upload_image(img, word)
+        link, error = upload_image(img, word, folder)
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:
@@ -92,16 +92,18 @@ class App:
         for hk in custom_hotkeys:
             key = hk.get("key")
             word = hk.get("word")
-            if key and word:
+            folder = hk.get("folder")
+            if key and (word or folder):
                 hotkey_str = f'<alt>+{key}'
                 # Default arg trick to bind current loop variables
-                hotkeys_dict[hotkey_str] = lambda w=word: self.on_hotkey(w)
+                hotkeys_dict[hotkey_str] = lambda w=word, f=folder: self.on_hotkey(w, f)
                 
         self.listener = keyboard.GlobalHotKeys(hotkeys_dict)
         self.listener.start()
 
-    def on_hotkey(self, word=None):
+    def on_hotkey(self, word=None, folder=None):
         self.current_word = word
+        self.current_folder = folder
         self.root.event_generate("<<TriggerCapture>>", when="tail")
 
     def trigger_settings(self, icon, _item):
@@ -114,8 +116,9 @@ class App:
         
     def init_capture(self, event):
         word = getattr(self, 'current_word', None)
+        folder = getattr(self, 'current_folder', None)
         def on_capture(img, x, y):
-            show_action_overlay(self.root, img, x, y, on_copy, lambda i: on_upload(i, word))
+            show_action_overlay(self.root, img, x, y, on_copy, lambda i: on_upload(i, word, folder))
         CaptureOverlay(self.root, on_capture)
         
     def quit(self, icon, item):

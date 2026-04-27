@@ -76,7 +76,7 @@ class SettingsWindow:
         tk.Entry(form_frame, textvariable=self.folder_var, width=40).grid(row=3, column=1, sticky="w", pady=5)
         
         # Custom Hotkeys
-        tk.Label(self.window, text="Custom Hotkeys (Alt + Key -> Appended Word)", font=("Helvetica", 10, "bold")).pack(pady=(10, 0))
+        tk.Label(self.window, text="Custom Hotkeys (Alt + Key -> Word / Folder)", font=("Helvetica", 10, "bold")).pack(pady=(10, 0))
         
         # Container with a scrollbar or just a frame
         self.hotkeys_frame = tk.Frame(self.window)
@@ -85,9 +85,9 @@ class SettingsWindow:
         self.hotkey_rows = []
         
         for hk in self.config.get("CUSTOM_HOTKEYS", []):
-            self.add_hotkey_row(hk.get("key", ""), hk.get("word", ""))
+            self.add_hotkey_row(hk.get("key", ""), hk.get("word", ""), hk.get("folder", ""))
             
-        tk.Button(self.window, text="Add Hotkey", command=lambda: self.add_hotkey_row("", "")).pack(pady=5)
+        tk.Button(self.window, text="Add Hotkey", command=lambda: self.add_hotkey_row("", "", "")).pack(pady=5)
         
         # Startup Checkbox
         self.startup_var = tk.BooleanVar(value=is_run_at_startup_enabled())
@@ -100,17 +100,21 @@ class SettingsWindow:
         tk.Button(btn_frame, text="Save", command=self.save_settings, width=10).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Cancel", command=self.window.destroy, width=10).pack(side="left", padx=5)
         
-    def add_hotkey_row(self, key_val, word_val):
+    def add_hotkey_row(self, key_val, word_val, folder_val):
         row_frame = tk.Frame(self.hotkeys_frame)
         row_frame.pack(fill="x", pady=2)
         
-        tk.Label(row_frame, text="Alt + ").pack(side="left")
+        tk.Label(row_frame, text="Alt+").pack(side="left")
         key_var = tk.StringVar(value=key_val)
-        tk.Entry(row_frame, textvariable=key_var, width=5).pack(side="left")
+        tk.Entry(row_frame, textvariable=key_var, width=3).pack(side="left")
         
-        tk.Label(row_frame, text=" -> Word: ").pack(side="left")
+        tk.Label(row_frame, text=" Word:").pack(side="left")
         word_var = tk.StringVar(value=word_val)
-        tk.Entry(row_frame, textvariable=word_var, width=20).pack(side="left")
+        tk.Entry(row_frame, textvariable=word_var, width=12).pack(side="left")
+        
+        tk.Label(row_frame, text=" Folder:").pack(side="left")
+        folder_var = tk.StringVar(value=folder_val)
+        tk.Entry(row_frame, textvariable=folder_var, width=12).pack(side="left")
         
         def remove_row():
             row_frame.destroy()
@@ -121,7 +125,8 @@ class SettingsWindow:
         self.hotkey_rows.append({
             "frame": row_frame,
             "key_var": key_var,
-            "word_var": word_var
+            "word_var": word_var,
+            "folder_var": folder_var
         })
         
     def save_settings(self):
@@ -134,8 +139,9 @@ class SettingsWindow:
         for r in self.hotkey_rows:
             k = r["key_var"].get().strip()
             w = r["word_var"].get().strip()
-            if k and w:
-                self.config["CUSTOM_HOTKEYS"].append({"key": k, "word": w})
+            f = r["folder_var"].get().strip()
+            if k and (w or f):
+                self.config["CUSTOM_HOTKEYS"].append({"key": k, "word": w, "folder": f})
         
         if save_config(self.config):
             set_run_at_startup(self.startup_var.get())
