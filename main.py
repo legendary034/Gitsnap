@@ -31,9 +31,10 @@ except Exception as e:
 
 
 def _icon_path(filename):
-    """Resolve an asset path that works both from source and frozen exe."""
+    """Resolve an asset path that works both from source and frozen exe.
+    PyInstaller single-file exes extract bundled datas to sys._MEIPASS."""
     if getattr(sys, 'frozen', False):
-        base = os.path.dirname(sys.executable)
+        base = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
     else:
         base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, filename)
