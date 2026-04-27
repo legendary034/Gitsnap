@@ -9,7 +9,7 @@ a = Analysis(
         ('gitsnap_icon.png', '.'),
         ('gitsnap_icon.ico', '.'),
     ],
-    hiddenimports=[],
+    hiddenimports=['psutil'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

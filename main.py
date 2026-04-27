@@ -2,10 +2,27 @@ import ctypes
 import os
 import sys
 
-# Mutex to ensure only one instance runs
-mut = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\GitsnapScreenshotUtility")
-if ctypes.windll.kernel32.GetLastError() == 183:
-    os._exit(0)
+# ── Kill any existing Gitsnap process before starting ────────────────────────
+try:
+    import psutil
+    _current_pid = os.getpid()
+    _exe_name = os.path.basename(sys.executable).lower()   # "gitsnap.exe" when frozen
+    for _proc in psutil.process_iter(["pid", "name", "exe"]):
+        try:
+            if _proc.pid == _current_pid:
+                continue
+            _pname = (_proc.info.get("name") or "").lower()
+            _pexe  = os.path.basename(_proc.info.get("exe") or "").lower()
+            if _pname == _exe_name or _pexe == _exe_name:
+                _proc.terminate()
+                try:
+                    _proc.wait(timeout=2)
+                except psutil.TimeoutExpired:
+                    _proc.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+except Exception:
+    pass  # psutil unavailable — fall through silently
 
 # Simple logging for debug
 with open("debug_log.txt", "a") as f:

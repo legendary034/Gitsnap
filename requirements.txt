@@ -6,3 +6,4 @@ win11toast
 pyperclip
 beautifulsoup4
 pywin32
+psutil
