@@ -87,6 +87,14 @@ class SettingsWindow:
         self.locations_frame = tk.Frame(self.inner, bd=1, relief="groove")
         self.locations_frame.pack(padx=16, fill="x")
 
+        # Single grid inside locations_frame — header + rows all share same columns
+        self.locations_grid = tk.Frame(self.locations_frame)
+        self.locations_grid.pack(fill="x")
+        # Column min-sizes (pixels): Name, Token, Repo, Branch, Folder, Delete
+        for col, px in enumerate([100, 170, 150, 58, 80, 28]):
+            self.locations_grid.columnconfigure(col, minsize=px, weight=1 if col == 2 else 0)
+
+        self._loc_next_row = 0
         self._build_location_header()
 
         self.location_rows = []
@@ -154,48 +162,59 @@ class SettingsWindow:
     # ── Location rows ─────────────────────────────────────────────────────
 
     def _build_location_header(self):
-        hdr = tk.Frame(self.locations_frame, bg="#e0e0e0")
-        hdr.pack(fill="x")
-        for text, w in [("Name", 14), ("Token", 26), ("Repo (user/repo)", 20),
-                        ("Branch", 8), ("Folder", 12), ("", 3)]:
-            tk.Label(hdr, text=text, bg="#e0e0e0", font=("Helvetica", 8, "bold"),
-                     width=w, anchor="w").pack(side="left", padx=2, pady=2)
+        bg = "#e0e0e0"
+        r = self._loc_next_row
+        self._loc_next_row += 1
+        for col, text in enumerate(["Name", "Token", "Repo (user/repo)", "Branch", "Folder", ""]):
+            tk.Label(self.locations_grid, text=text, bg=bg,
+                     font=("Helvetica", 8, "bold"), anchor="w"
+                     ).grid(row=r, column=col, sticky="ew", padx=3, pady=2)
 
     def _add_location_row(self, name, token, repo, branch, folder):
-        row = tk.Frame(self.locations_frame)
-        row.pack(fill="x", pady=1)
+        r = self._loc_next_row
+        self._loc_next_row += 1
 
-        name_var = tk.StringVar(value=name)
-        token_var = tk.StringVar(value=token)
-        repo_var = tk.StringVar(value=repo)
+        name_var   = tk.StringVar(value=name)
+        token_var  = tk.StringVar(value=token)
+        repo_var   = tk.StringVar(value=repo)
         branch_var = tk.StringVar(value=branch)
         folder_var = tk.StringVar(value=folder)
 
-        tk.Entry(row, textvariable=name_var, width=14).pack(side="left", padx=2)
-        tk.Entry(row, textvariable=token_var, width=26, show="*").pack(side="left", padx=2)
-        tk.Entry(row, textvariable=repo_var, width=20).pack(side="left", padx=2)
-        tk.Entry(row, textvariable=branch_var, width=8).pack(side="left", padx=2)
-        tk.Entry(row, textvariable=folder_var, width=12).pack(side="left", padx=2)
+        e_name   = tk.Entry(self.locations_grid, textvariable=name_var)
+        e_token  = tk.Entry(self.locations_grid, textvariable=token_var, show="*")
+        e_repo   = tk.Entry(self.locations_grid, textvariable=repo_var)
+        e_branch = tk.Entry(self.locations_grid, textvariable=branch_var)
+        e_folder = tk.Entry(self.locations_grid, textvariable=folder_var)
+
+        e_name  .grid(row=r, column=0, sticky="ew", padx=2, pady=1)
+        e_token .grid(row=r, column=1, sticky="ew", padx=2, pady=1)
+        e_repo  .grid(row=r, column=2, sticky="ew", padx=2, pady=1)
+        e_branch.grid(row=r, column=3, sticky="ew", padx=2, pady=1)
+        e_folder.grid(row=r, column=4, sticky="ew", padx=2, pady=1)
 
         # Refresh dropdowns when name changes
         name_var.trace_add("write", lambda *_: self._refresh_location_dropdowns())
 
+        widgets = [e_name, e_token, e_repo, e_branch, e_folder]
+
         def remove():
-            row.destroy()
-            self.location_rows[:] = [r for r in self.location_rows if r["frame"] is not row]
+            for w in widgets:
+                w.destroy()
+            del_btn.destroy()
+            self.location_rows[:] = [x for x in self.location_rows if x["row"] != r]
             self._refresh_location_dropdowns()
 
-        tk.Button(row, text="✕", fg="red", width=3, command=remove).pack(side="left", padx=2)
+        del_btn = tk.Button(self.locations_grid, text="✕", fg="red", command=remove)
+        del_btn.grid(row=r, column=5, padx=2, pady=1)
 
-        entry = {
-            "frame": row,
-            "name_var": name_var,
-            "token_var": token_var,
-            "repo_var": repo_var,
+        self.location_rows.append({
+            "row": r,
+            "name_var":   name_var,
+            "token_var":  token_var,
+            "repo_var":   repo_var,
             "branch_var": branch_var,
             "folder_var": folder_var,
-        }
-        self.location_rows.append(entry)
+        })
 
     def _get_location_names(self):
         return [r["name_var"].get().strip() for r in self.location_rows if r["name_var"].get().strip()]
