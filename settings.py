@@ -41,13 +41,13 @@ class SettingsWindow:
         
         self.window = tk.Toplevel(parent)
         self.window.title("Settings")
-        self.window.geometry("450x330")
+        self.window.geometry("500x550")
         self.window.attributes('-topmost', True)
         
         # Center the window
         self.window.update_idletasks()
-        x = (self.window.winfo_screenwidth() // 2) - (450 // 2)
-        y = (self.window.winfo_screenheight() // 2) - (330 // 2)
+        x = (self.window.winfo_screenwidth() // 2) - (500 // 2)
+        y = (self.window.winfo_screenheight() // 2) - (550 // 2)
         self.window.geometry(f"+{x}+{y}")
         
         tk.Label(self.window, text="GitHub Settings", font=("Helvetica", 12, "bold")).pack(pady=10)
@@ -75,6 +75,20 @@ class SettingsWindow:
         self.folder_var = tk.StringVar(value=self.config.get("UPLOAD_FOLDER", "screenshots"))
         tk.Entry(form_frame, textvariable=self.folder_var, width=40).grid(row=3, column=1, sticky="w", pady=5)
         
+        # Custom Hotkeys
+        tk.Label(self.window, text="Custom Hotkeys (Alt + Key -> Appended Word)", font=("Helvetica", 10, "bold")).pack(pady=(10, 0))
+        
+        # Container with a scrollbar or just a frame
+        self.hotkeys_frame = tk.Frame(self.window)
+        self.hotkeys_frame.pack(padx=20, fill="both", expand=True)
+        
+        self.hotkey_rows = []
+        
+        for hk in self.config.get("CUSTOM_HOTKEYS", []):
+            self.add_hotkey_row(hk.get("key", ""), hk.get("word", ""))
+            
+        tk.Button(self.window, text="Add Hotkey", command=lambda: self.add_hotkey_row("", "")).pack(pady=5)
+        
         # Startup Checkbox
         self.startup_var = tk.BooleanVar(value=is_run_at_startup_enabled())
         tk.Checkbutton(self.window, text="Start at Windows startup", variable=self.startup_var).pack(pady=10)
@@ -86,11 +100,42 @@ class SettingsWindow:
         tk.Button(btn_frame, text="Save", command=self.save_settings, width=10).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Cancel", command=self.window.destroy, width=10).pack(side="left", padx=5)
         
+    def add_hotkey_row(self, key_val, word_val):
+        row_frame = tk.Frame(self.hotkeys_frame)
+        row_frame.pack(fill="x", pady=2)
+        
+        tk.Label(row_frame, text="Alt + ").pack(side="left")
+        key_var = tk.StringVar(value=key_val)
+        tk.Entry(row_frame, textvariable=key_var, width=5).pack(side="left")
+        
+        tk.Label(row_frame, text=" -> Word: ").pack(side="left")
+        word_var = tk.StringVar(value=word_val)
+        tk.Entry(row_frame, textvariable=word_var, width=20).pack(side="left")
+        
+        def remove_row():
+            row_frame.destroy()
+            self.hotkey_rows = [r for r in self.hotkey_rows if r["frame"] != row_frame]
+            
+        tk.Button(row_frame, text="X", fg="red", command=remove_row).pack(side="left", padx=5)
+        
+        self.hotkey_rows.append({
+            "frame": row_frame,
+            "key_var": key_var,
+            "word_var": word_var
+        })
+        
     def save_settings(self):
         self.config["GITHUB_TOKEN"] = self.token_var.get()
         self.config["GITHUB_REPO"] = self.repo_var.get()
         self.config["GITHUB_BRANCH"] = self.branch_var.get()
         self.config["UPLOAD_FOLDER"] = self.folder_var.get()
+        
+        self.config["CUSTOM_HOTKEYS"] = []
+        for r in self.hotkey_rows:
+            k = r["key_var"].get().strip()
+            w = r["word_var"].get().strip()
+            if k and w:
+                self.config["CUSTOM_HOTKEYS"].append({"key": k, "word": w})
         
         if save_config(self.config):
             set_run_at_startup(self.startup_var.get())
@@ -100,4 +145,4 @@ class SettingsWindow:
             messagebox.showerror("Error", "Failed to save settings.", parent=self.window)
 
 def show_settings_window(parent):
-    SettingsWindow(parent)
+    return SettingsWindow(parent)

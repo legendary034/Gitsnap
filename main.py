@@ -38,9 +38,9 @@ def create_tray_icon():
 def on_copy(img):
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
 
-def on_upload(img):
+def on_upload(img, word=None):
     def process():
-        link, error = upload_image(img)
+        link, error = upload_image(img, word)
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:
@@ -68,11 +68,7 @@ class App:
             self.icon = pystray.Icon("ScreenshotUtility", create_tray_icon(), "Screenshot Utility", menu)
             threading.Thread(target=self.icon.run, daemon=True).start()
             
-            with open("debug_log.txt", "a") as f:
-                f.write("Tray icon thread started. Initializing Global Hotkeys...\n")
-                
-            listener = keyboard.GlobalHotKeys({'<alt>+s': self.on_hotkey})
-            listener.start()
+            self.reload_hotkeys()
             
             with open("debug_log.txt", "a") as f:
                 f.write("Hotkeys active. Starting Tkinter mainloop.\n")
@@ -83,18 +79,43 @@ class App:
                 f.write(f"Runtime Error in App.start: {e}\n")
             os._exit(1)
         
-    def on_hotkey(self):
+    def reload_hotkeys(self):
+        if hasattr(self, 'listener'):
+            self.listener.stop()
+            
+        from config import load_config
+        config = load_config() or {}
+        custom_hotkeys = config.get("CUSTOM_HOTKEYS", [])
+        
+        hotkeys_dict = {'<alt>+s': lambda: self.on_hotkey(None)}
+        
+        for hk in custom_hotkeys:
+            key = hk.get("key")
+            word = hk.get("word")
+            if key and word:
+                hotkey_str = f'<alt>+{key}'
+                # Default arg trick to bind current loop variables
+                hotkeys_dict[hotkey_str] = lambda w=word: self.on_hotkey(w)
+                
+        self.listener = keyboard.GlobalHotKeys(hotkeys_dict)
+        self.listener.start()
+
+    def on_hotkey(self, word=None):
+        self.current_word = word
         self.root.event_generate("<<TriggerCapture>>", when="tail")
 
     def trigger_settings(self, icon, _item):
         self.root.event_generate("<<OpenSettings>>", when="tail")
 
     def open_settings(self, _event):
-        show_settings_window(self.root)
+        sw = show_settings_window(self.root)
+        self.root.wait_window(sw.window)
+        self.reload_hotkeys()
         
     def init_capture(self, event):
+        word = getattr(self, 'current_word', None)
         def on_capture(img, x, y):
-            show_action_overlay(self.root, img, x, y, on_copy, on_upload)
+            show_action_overlay(self.root, img, x, y, on_copy, lambda i: on_upload(i, word))
         CaptureOverlay(self.root, on_capture)
         
     def quit(self, icon, item):

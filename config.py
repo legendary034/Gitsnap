@@ -15,7 +15,8 @@ def load_config():
             "GITHUB_TOKEN": "",
             "GITHUB_REPO": "username/reponame",
             "GITHUB_BRANCH": "main",
-            "UPLOAD_FOLDER": "screenshots"
+            "UPLOAD_FOLDER": "screenshots",
+            "CUSTOM_HOTKEYS": []
         }
         try:
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
