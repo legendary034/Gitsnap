@@ -26,7 +26,7 @@ DEFAULT_CONFIG = {
     "DEFAULT_LOCATION": "Default",
     "GITHUB_LOCATIONS": [DEFAULT_LOCATION.copy()],
     "CUSTOM_HOTKEYS": [
-        {"key": "s", "word": "", "location": ""}
+        {"key": "s", "word": "", "location": "", "type": "image"}
     ]
 }
 
@@ -48,14 +48,15 @@ def _migrate_old_config(data):
     data.setdefault("DEFAULT_LOCATION", "Default")
     data.setdefault("GITHUB_LOCATIONS", [loc])
 
-    # Ensure existing custom hotkeys have a location field
+    # Ensure existing custom hotkeys have location and type fields
     for hk in data.get("CUSTOM_HOTKEYS", []):
         hk.setdefault("location", "")
+        hk.setdefault("type", "image")
 
     # Seed Alt+S if not present
     keys_present = [hk.get("key", "") for hk in data.get("CUSTOM_HOTKEYS", [])]
     if "s" not in keys_present:
-        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": ""})
+        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": "", "type": "image"})
 
     return data
 
@@ -83,7 +84,7 @@ def load_config():
     # Ensure Alt+S hotkey exists
     keys_present = [hk.get("key", "") for hk in data.get("CUSTOM_HOTKEYS", [])]
     if "s" not in keys_present:
-        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": ""})
+        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": "", "type": "image"})
         save_config(data)
 
     return data

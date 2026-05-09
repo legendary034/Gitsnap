@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from config import load_config, get_location, DEBUG_LOG_FILE
 
-def upload_image(img, word=None, location_name=None):
+def upload_image(img, word=None, location_name=None, file_path=None):
     config = load_config()
     if not config:
         return (None, "Could not load configuration.")
@@ -23,20 +23,26 @@ def upload_image(img, word=None, location_name=None):
         return (None, "GitHub repository is not configured.")
 
     try:
-        # Convert PIL image to bytes
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG')
-        img_bytes = img_byte_arr.getvalue()
+        if file_path:
+            with open(file_path, "rb") as f:
+                img_bytes = f.read()
+        else:
+            # Convert PIL image to bytes
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
 
         # Base64 encode for GitHub API
         b64_content = base64.b64encode(img_bytes).decode('utf-8')
 
         # Generate filename
-        filename_base = f"screenshot_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"
+        ext = "webm" if file_path else "png"
+        prefix = "video" if file_path else "screenshot"
+        filename_base = f"{prefix}_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"
         if word:
-            filename = f"{filename_base}_{word}.png"
+            filename = f"{filename_base}_{word}.{ext}"
         else:
-            filename = f"{filename_base}.png"
+            filename = f"{filename_base}.{ext}"
 
         path = f"{folder}/{filename}" if folder else filename
 

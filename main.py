@@ -43,6 +43,7 @@ try:
     from upload import upload_image
     from notify import copy_image_to_clipboard, copy_text_to_clipboard_and_notify
     from settings import show_settings_window
+    from video import VideoRecorder
 except Exception as e:
     with open(DEBUG_LOG_FILE, "a") as f:
         f.write(f"Import Error: {e}\n")
@@ -104,10 +105,15 @@ class App:
             with open(DEBUG_LOG_FILE, "a") as f:
                 f.write(f"Icon load error: {e}\n")
         self.root.bind("<<TriggerCapture>>", self.init_capture)
+        self.root.bind("<<StopRecording>>", self.stop_recording)
         self.root.bind("<<OpenSettings>>", self.open_settings)
         self.icon = None
         self.current_word = None
         self.current_location = None
+        self.current_type = "image"
+        self.current_hotkey = None
+        self.recorder = None
+        self.active_hotkey = None
 
     def start(self):
         try:
@@ -146,21 +152,26 @@ class App:
             key = hk.get("key", "").strip()
             word = hk.get("word", "").strip() or None
             location = hk.get("location", "").strip() or None
+            hk_type = hk.get("type", "image").strip()
             if key:
                 hotkey_str = f'<alt>+{key}'
-                # Default-arg trick to capture loop variables correctly
-                hotkeys_dict[hotkey_str] = lambda w=word, loc=location: self.on_hotkey(w, loc)
+                hotkeys_dict[hotkey_str] = lambda w=word, loc=location, t=hk_type, k=hotkey_str: self.on_hotkey(w, loc, t, k)
 
         if not hotkeys_dict:
-            # Safety fallback: Alt+S triggers a plain capture
-            hotkeys_dict['<alt>+s'] = lambda: self.on_hotkey(None, None)
+            hotkeys_dict['<alt>+s'] = lambda: self.on_hotkey(None, None, "image", "<alt>+s")
 
         self.listener = keyboard.GlobalHotKeys(hotkeys_dict)
         self.listener.start()
 
-    def on_hotkey(self, word=None, location=None):
+    def on_hotkey(self, word=None, location=None, hk_type="image", hotkey_str=None):
+        if self.recorder and self.recorder.is_recording and hotkey_str == self.active_hotkey:
+            self.root.event_generate("<<StopRecording>>", when="tail")
+            return
+            
         self.current_word = word
         self.current_location = location
+        self.current_type = hk_type
+        self.current_hotkey = hotkey_str
         self.root.event_generate("<<TriggerCapture>>", when="tail")
 
     def trigger_settings(self, icon, _item):
@@ -174,10 +185,31 @@ class App:
     def init_capture(self, event):
         word = self.current_word
         location = self.current_location
-        def on_capture(img, x, y):
-            show_action_overlay(self.root, img, x, y, on_copy,
-                                lambda i: on_upload(i, word, location))
-        CaptureOverlay(self.root, on_capture)
+        is_video = (self.current_type == "video")
+        
+        def on_capture(img, x, y, bbox=None):
+            if is_video and bbox:
+                self.recorder = VideoRecorder(bbox)
+                self.active_hotkey = self.current_hotkey
+                self.current_word_save = word
+                self.current_location_save = location
+                self.recorder.start()
+            else:
+                show_action_overlay(self.root, img, x, y, on_copy,
+                                    lambda i, p=None: on_upload(i, word, location, file_path=p))
+                                    
+        CaptureOverlay(self.root, on_capture, is_video=is_video)
+
+    def stop_recording(self, event):
+        if self.recorder and self.recorder.is_recording:
+            video_path = self.recorder.stop()
+            self.recorder = None
+            word = getattr(self, "current_word_save", None)
+            location = getattr(self, "current_location_save", None)
+            
+            show_action_overlay(self.root, None, 0, 0, on_copy,
+                                lambda i, p=None: on_upload(i, word, location, file_path=p),
+                                is_video=True, video_path=video_path)
 
     def quit(self, icon, item):
         icon.stop()

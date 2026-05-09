@@ -7,3 +7,6 @@ pyperclip
 beautifulsoup4
 pywin32
 psutil
+mss
+imageio
+imageio-ffmpeg

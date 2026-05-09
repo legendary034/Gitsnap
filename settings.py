@@ -133,10 +133,10 @@ class SettingsWindow:
 
         self.hotkey_rows = []
         for hk in self.config.get("CUSTOM_HOTKEYS", []):
-            self._add_hotkey_row(hk.get("key", ""), hk.get("word", ""), hk.get("location", ""))
+            self._add_hotkey_row(hk.get("key", ""), hk.get("word", ""), hk.get("location", ""), hk.get("type", "image"))
 
         tk.Button(self.inner, text="＋ Add Hotkey",
-                  command=lambda: self._add_hotkey_row("", "", "")
+                  command=lambda: self._add_hotkey_row("", "", "", "image")
                   ).pack(pady=(4, 8))
 
         # ── Startup checkbox ───────────────────────────────────────────────
@@ -245,19 +245,23 @@ class SettingsWindow:
     def _build_hotkey_header(self):
         pass  # Labels are inline in each row; header not needed
 
-    def _add_hotkey_row(self, key_val, word_val, location_val):
+    def _add_hotkey_row(self, key_val, word_val, location_val, type_val):
         row = tk.Frame(self.hotkeys_frame)
         row.pack(fill="x", pady=2)
 
         tk.Label(row, text="Alt+").pack(side="left")
         key_var = tk.StringVar(value=key_val)
         tk.Entry(row, textvariable=key_var, width=3).pack(side="left")
+        
+        tk.Label(row, text=" Type:").pack(side="left")
+        type_var = tk.StringVar(value=type_val)
+        ttk.Combobox(row, textvariable=type_var, values=["image", "video"], width=6, state="readonly").pack(side="left", padx=2)
 
-        tk.Label(row, text="  Word:").pack(side="left")
+        tk.Label(row, text=" Word:").pack(side="left")
         word_var = tk.StringVar(value=word_val)
         tk.Entry(row, textvariable=word_var, width=14).pack(side="left")
 
-        tk.Label(row, text="  Location:").pack(side="left")
+        tk.Label(row, text=" Location:").pack(side="left")
         location_var = tk.StringVar()
         combo_values = ["(use default)"] + self._get_location_names()
         location_combo = ttk.Combobox(row, textvariable=location_var,
@@ -265,7 +269,7 @@ class SettingsWindow:
         # Set initial value
         display_val = location_val if location_val in combo_values else "(use default)"
         location_var.set(display_val)
-        location_combo.pack(side="left", padx=4)
+        location_combo.pack(side="left", padx=2)
 
         def remove():
             row.destroy()
@@ -276,6 +280,7 @@ class SettingsWindow:
         self.hotkey_rows.append({
             "frame": row,
             "key_var": key_var,
+            "type_var": type_var,
             "word_var": word_var,
             "location_var": location_var,
             "location_combo": location_combo,
@@ -324,6 +329,7 @@ class SettingsWindow:
             loc_name = "" if loc_val == "(use default)" else loc_val
             hotkeys.append({
                 "key": k,
+                "type": r["type_var"].get().strip() or "image",
                 "word": r["word_var"].get().strip(),
                 "location": loc_name,
             })

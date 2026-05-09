@@ -11,9 +11,10 @@ def set_dpi_awareness():
         pass
 
 class CaptureOverlay:
-    def __init__(self, parent, on_capture):
+    def __init__(self, parent, on_capture, is_video=False):
         self.parent = parent
         self.on_capture = on_capture
+        self.is_video = is_video
 
         # Get virtual screen metrics
         self.v_left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
@@ -48,7 +49,8 @@ class CaptureOverlay:
     def on_press(self, event):
         self.start_x = self.canvas.canvasx(event.x)
         self.start_y = self.canvas.canvasy(event.y)
-        self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2, fill='white')
+        color = 'green' if self.is_video else 'red'
+        self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline=color, width=2, fill='white')
 
     def on_drag(self, event):
         cur_x = self.canvas.canvasx(event.x)
@@ -74,5 +76,8 @@ class CaptureOverlay:
             abs_y2 = y2 + self.v_top
             
             # bbox coordinates relative to virtual screen
-            img = ImageGrab.grab(bbox=(abs_x1, abs_y1, abs_x2, abs_y2), all_screens=True)
-            self.on_capture(img, abs_x2, abs_y2)
+            if self.is_video:
+                self.on_capture(None, abs_x2, abs_y2, bbox=(abs_x1, abs_y1, abs_x2, abs_y2))
+            else:
+                img = ImageGrab.grab(bbox=(abs_x1, abs_y1, abs_x2, abs_y2), all_screens=True)
+                self.on_capture(img, abs_x2, abs_y2, bbox=None)
