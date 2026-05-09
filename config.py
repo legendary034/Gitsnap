@@ -2,12 +2,17 @@ import json
 import os
 import sys
 
-def get_base_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+def get_appdata_path():
+    appdata = os.environ.get("APPDATA")
+    if not appdata:
+        appdata = os.path.expanduser("~")
+    path = os.path.join(appdata, "Gitsnap")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
 
-CONFIG_FILE = os.path.join(get_base_path(), "config.json")
+CONFIG_FILE = os.path.join(get_appdata_path(), "config.json")
+DEBUG_LOG_FILE = os.path.join(get_appdata_path(), "debug_log.txt")
 
 DEFAULT_LOCATION = {
     "name": "Default",

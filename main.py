@@ -24,8 +24,10 @@ try:
 except Exception:
     pass  # psutil unavailable — fall through silently
 
+from config import DEBUG_LOG_FILE
+
 # Simple logging for debug
-with open("debug_log.txt", "a") as f:
+with open(DEBUG_LOG_FILE, "a") as f:
     import datetime
     f.write(f"\n[{datetime.datetime.now()}] Application starting...\n")
 
@@ -42,7 +44,7 @@ try:
     from notify import copy_image_to_clipboard, copy_text_to_clipboard_and_notify
     from settings import show_settings_window
 except Exception as e:
-    with open("debug_log.txt", "a") as f:
+    with open(DEBUG_LOG_FILE, "a") as f:
         f.write(f"Import Error: {e}\n")
     os._exit(1)
 
@@ -93,13 +95,13 @@ class App:
         try:
             from PIL import ImageTk
             _png = _icon_path("gitsnap_icon.png")
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write(f"Icon path: {_png} exists={os.path.exists(_png)}\n")
             _pil = Image.open(_png).convert("RGBA")
             self._app_icon = ImageTk.PhotoImage(_pil)   # must stay referenced
             self.root.iconphoto(True, self._app_icon)   # True = apply to all Toplevels
         except Exception as e:
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write(f"Icon load error: {e}\n")
         self.root.bind("<<TriggerCapture>>", self.init_capture)
         self.root.bind("<<OpenSettings>>", self.open_settings)
@@ -109,7 +111,7 @@ class App:
 
     def start(self):
         try:
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write("Initializing tray icon...\n")
 
             menu = pystray.Menu(
@@ -121,12 +123,12 @@ class App:
 
             self.reload_hotkeys()
 
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write("Hotkeys active. Starting Tkinter mainloop.\n")
 
             self.root.mainloop()
         except Exception as e:
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write(f"Runtime Error in App.start: {e}\n")
             os._exit(1)
 

@@ -3,7 +3,7 @@ import base64
 import requests
 import uuid
 from datetime import datetime
-from config import load_config, get_location
+from config import load_config, get_location, DEBUG_LOG_FILE
 
 def upload_image(img, word=None, location_name=None):
     config = load_config()
@@ -56,7 +56,7 @@ def upload_image(img, word=None, location_name=None):
         response = requests.put(url, headers=headers, json=data, timeout=30)
 
         if response.status_code >= 400:
-            with open("debug_log.txt", "a") as f:
+            with open(DEBUG_LOG_FILE, "a") as f:
                 f.write(f"Upload failed - Status: {response.status_code}, Response: {response.text}\n")
 
             if response.status_code == 404:
@@ -70,6 +70,6 @@ def upload_image(img, word=None, location_name=None):
         return (raw_url, None)
 
     except Exception as e:
-        with open("debug_log.txt", "a") as f:
+        with open(DEBUG_LOG_FILE, "a") as f:
             f.write(f"Upload Exception: {e}\n")
         return (None, str(e))
