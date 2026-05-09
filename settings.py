@@ -25,7 +25,7 @@ def is_run_at_startup_enabled():
             return True
     except FileNotFoundError:
         return False
-    except Exception as e:
+    except (OSError, winreg.OpenKeyError) if hasattr(winreg, 'OpenKeyError') else OSError as e:
         print(f"Error reading registry: {e}")
         return False
 
@@ -46,7 +46,7 @@ def set_run_at_startup(enable):
                 winreg.DeleteValue(key, APP_NAME)
     except FileNotFoundError:
         pass
-    except Exception as e:
+    except OSError as e:
         print(f"Error writing registry: {e}")
 
 
@@ -145,7 +145,12 @@ class SettingsWindow:
 
         self.hotkey_rows = []
         for hk in self.config.get("CUSTOM_HOTKEYS", []):
-            self._add_hotkey_row(hk.get("key", ""), hk.get("word", ""), hk.get("location", ""), hk.get("type", "image"))
+            self._add_hotkey_row(
+                hk.get("key", ""),
+                hk.get("word", ""),
+                hk.get("location", ""),
+                hk.get("type", "image")
+            )
 
         tk.Button(self.inner, text="＋ Add Hotkey",
                   command=lambda: self._add_hotkey_row("", "", "", "image")
@@ -234,7 +239,8 @@ class SettingsWindow:
         })
 
     def _get_location_names(self):
-        return [r["name_var"].get().strip() for r in self.location_rows if r["name_var"].get().strip()]
+        return [r["name_var"].get().strip() for r in self.location_rows
+                if r["name_var"].get().strip()]
 
     def _refresh_location_dropdowns(self):
         names = self._get_location_names()
@@ -267,7 +273,8 @@ class SettingsWindow:
         
         tk.Label(row, text=" Type:").pack(side="left")
         type_var = tk.StringVar(value=type_val)
-        ttk.Combobox(row, textvariable=type_var, values=["image", "video"], width=6, state="readonly").pack(side="left", padx=2)
+        ttk.Combobox(row, textvariable=type_var, values=["image", "video"],
+                     width=6, state="readonly").pack(side="left", padx=2)
 
         tk.Label(row, text=" Word:").pack(side="left")
         word_var = tk.StringVar(value=word_val)

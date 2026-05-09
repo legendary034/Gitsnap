@@ -62,7 +62,8 @@ def _migrate_old_config(data):
     # Seed Alt+S if not present
     keys_present = [hk.get("key", "") for hk in data.get("CUSTOM_HOTKEYS", [])]
     if "s" not in keys_present:
-        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": "", "type": "image"})
+        new_hk = {"key": "s", "word": "", "location": "", "type": "image"}
+        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, new_hk)
 
     return data
 
@@ -77,13 +78,13 @@ def load_config():
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(DEFAULT_CONFIG, f, indent=4)
             return DEFAULT_CONFIG.copy()
-        except Exception:
+        except (IOError, OSError):
             return DEFAULT_CONFIG.copy()
 
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-    except Exception:
+    except (IOError, OSError, json.JSONDecodeError):
         return None
 
     # Auto-migrate if old flat format detected
@@ -94,7 +95,8 @@ def load_config():
     # Ensure Alt+S hotkey exists
     keys_present = [hk.get("key", "") for hk in data.get("CUSTOM_HOTKEYS", [])]
     if "s" not in keys_present:
-        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, {"key": "s", "word": "", "location": "", "type": "image"})
+        new_hk = {"key": "s", "word": "", "location": "", "type": "image"}
+        data.setdefault("CUSTOM_HOTKEYS", []).insert(0, new_hk)
         save_config(data)
 
     return data
@@ -108,7 +110,7 @@ def save_config(config_data):
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=4)
         return True
-    except Exception as e:
+    except (IOError, OSError) as e:
         print(f"Error saving config: {e}")
         return False
 

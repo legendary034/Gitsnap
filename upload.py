@@ -45,7 +45,8 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         # Generate filename
         ext = "mp4" if file_path else "png"
         prefix = "video" if file_path else "screenshot"
-        filename_base = f"{prefix}_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"
+        now_str = datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')
+        filename_base = f"{prefix}_{now_str}_{uuid.uuid4().hex[:6]}"
         if word:
             filename = f"{filename_base}_{word}.{ext}"
         else:
@@ -70,7 +71,8 @@ def upload_image(img, word=None, location_name=None, file_path=None):
 
         if response.status_code >= 400:
             with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write(f"Upload failed - Status: {response.status_code}, Response: {response.text}\n")
+                f.write(f"Upload failed - Status: {response.status_code}, "
+                        f"Response: {response.text}\n")
 
             if response.status_code == 404:
                 return (None, f"Not Found - check branch '{branch}' or repository name.")
@@ -82,7 +84,7 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{path}"
         return (raw_url, None)
 
-    except Exception as e:
+    except (requests.RequestException, IOError, OSError) as e:
         with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"Upload Exception: {e}\n")
         return (None, str(e))

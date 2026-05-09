@@ -74,7 +74,7 @@ class VideoRecorder:
                     sleep_time = frame_time - elapsed
                     if sleep_time > 0:
                         time.sleep(sleep_time)
-        except Exception as e:
+        except (IOError, OSError, ValueError, RuntimeError) as e:
             with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"Recording error: {e}\n")
         finally:

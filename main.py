@@ -7,6 +7,18 @@ import sys
 import datetime
 import threading
 import tkinter as tk
+from PIL import Image, ImageDraw, ImageTk
+import pystray
+from pynput import keyboard
+from win11toast import toast
+
+from capture import CaptureOverlay, set_dpi_awareness
+from overlay import show_action_overlay
+from upload import upload_image
+from notify import copy_image_to_clipboard, copy_text_to_clipboard_and_notify
+from settings import show_settings_window
+from video import VideoRecorder
+from config import load_config, DEBUG_LOG_FILE
 
 # ── Kill any existing Gitsnap process before starting ────────────────────────
 try:
@@ -27,32 +39,16 @@ try:
                     _proc.kill()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
-except Exception:
-    pass  # psutil unavailable — fall through silently
+except (ImportError, AttributeError):
+    pass  # psutil unavailable or not working — fall through silently
 
-from config import DEBUG_LOG_FILE
 
 # Simple logging for debug
-with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-    f.write(f"\n[{datetime.datetime.now()}] Application starting...\n")
+with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f_init:
+    _f_init.write(f"\n[{datetime.datetime.now()}] Application starting...\n")
 
-try:
-    import tkinter as tk
-    import pystray
-    from PIL import Image, ImageDraw
-    from pynput import keyboard
-    import threading
-
-    from capture import CaptureOverlay, set_dpi_awareness
-    from overlay import show_action_overlay
-    from upload import upload_image
-    from notify import copy_image_to_clipboard, copy_text_to_clipboard_and_notify
-    from settings import show_settings_window
-    from video import VideoRecorder
-except Exception as e:
-    with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"Import Error: {e}\n")
-    os._exit(1)
+# Initial import check is no longer needed here as they are at top level
+# If they fail, the app will crash with an ImportError which is fine for startup.
 
 
 def _icon_path(filename):
@@ -77,7 +73,7 @@ def create_tray_icon():
             resampling = resampling.LANCZOS
         img = img.resize((64, 64), resampling)
         return img
-    except Exception:
+    except (IOError, OSError, tk.TclError, AttributeError):
         # Fallback: plain blue square
         image = Image.new('RGB', (64, 64), color=(30, 80, 160))
         d = ImageDraw.Draw(image)
@@ -90,7 +86,6 @@ def on_copy(img):
     Handles copying an image or notification to the clipboard.
     """
     if isinstance(img, str) and img == "saved_video":
-        from win11toast import toast
         toast("Video Saved", "The recording has been saved successfully.")
         return
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
@@ -105,7 +100,6 @@ def on_upload(img, word=None, location_name=None, file_path=None):
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:
-            from win11toast import toast
             toast("Upload Failed", error or "Could not upload image.")
     threading.Thread(target=process, daemon=True).start()
 
@@ -122,16 +116,15 @@ class App:
         self.root.withdraw()
         # Set icon for root AND all future Toplevel windows (Settings, etc.)
         try:
-            from PIL import ImageTk
             _png = _icon_path("gitsnap_icon.png")
-            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write(f"Icon path: {_png} exists={os.path.exists(_png)}\n")
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f:
+                _f.write(f"Icon path: {_png} exists={os.path.exists(_png)}\n")
             _pil = Image.open(_png).convert("RGBA")
             self._app_icon = ImageTk.PhotoImage(_pil)   # must stay referenced
             self.root.iconphoto(True, self._app_icon)   # True = apply to all Toplevels
-        except Exception as e:
-            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write(f"Icon load error: {e}\n")
+        except (IOError, OSError, tk.TclError) as e:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f:
+                _f.write(f"Icon load error: {e}\n")
         self.root.bind("<<TriggerCapture>>", self.init_capture)
         self.root.bind("<<StopRecording>>", self.stop_recording)
         self.root.bind("<<OpenSettings>>", self.open_settings)
@@ -152,25 +145,26 @@ class App:
         Starts the application, tray icon, and hotkey listener.
         """
         try:
-            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write("Initializing tray icon...\n")
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f:
+                _f.write("Initializing tray icon...\n")
 
             menu = pystray.Menu(
                 pystray.MenuItem('Settings', self.trigger_settings),
                 pystray.MenuItem('Quit', self.quit)
             )
-            self.icon = pystray.Icon("ScreenshotUtility", create_tray_icon(), "Screenshot Utility", menu)
+            self.icon = pystray.Icon("ScreenshotUtility", create_tray_icon(),
+                                     "Screenshot Utility", menu)
             threading.Thread(target=self.icon.run, daemon=True).start()
 
             self.reload_hotkeys()
 
-            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write("Hotkeys active. Starting Tkinter mainloop.\n")
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f:
+                _f.write("Hotkeys active. Starting Tkinter mainloop.\n")
 
             self.root.mainloop()
-        except Exception as e:
-            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
-                f.write(f"Runtime Error in App.start: {e}\n")
+        except (tk.TclError, RuntimeError) as e:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f:
+                _f.write(f"Runtime Error in App.start: {e}\n")
             os._exit(1)
 
     def reload_hotkeys(self):
@@ -180,7 +174,6 @@ class App:
         if self.listener:
             self.listener.stop()
 
-        from config import load_config
         config = load_config() or {}
         custom_hotkeys = config.get("CUSTOM_HOTKEYS", [])
 
@@ -193,7 +186,10 @@ class App:
             hk_type = hk.get("type", "image").strip()
             if key:
                 hotkey_str = f'<alt>+{key}'
-                hotkeys_dict[hotkey_str] = lambda w=word, loc=location, t=hk_type, k=hotkey_str: self.on_hotkey(w, loc, t, k)
+                hotkeys_dict[hotkey_str] = (
+                    lambda w=word, loc=location, t=hk_type, k=hotkey_str:
+                    self.on_hotkey(w, loc, t, k)
+                )
 
         if not hotkeys_dict:
             hotkeys_dict['<alt>+s'] = lambda: self.on_hotkey(None, None, "image", "<alt>+s")
@@ -208,7 +204,6 @@ class App:
         if self.recorder and self.recorder.is_recording and hotkey_str == self.active_hotkey:
             self.root.event_generate("<<StopRecording>>", when="tail")
             return
-            
         self.current_word = word
         self.current_location = location
         self.current_type = hk_type
@@ -257,7 +252,7 @@ class App:
         if self.current_overlay:
             try:
                 self.current_overlay.window.destroy()
-            except:
+            except tk.TclError:
                 pass
             self.current_overlay = None
 

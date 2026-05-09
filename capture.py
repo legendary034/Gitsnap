@@ -13,7 +13,7 @@ def set_dpi_awareness():
     """
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 class CaptureOverlay:
@@ -56,7 +56,6 @@ class CaptureOverlay:
         """
         Placeholder for showing the overlay (currently unused as it shows on init).
         """
-        pass
 
     def on_press(self, event):
         """
@@ -84,22 +83,18 @@ class CaptureOverlay:
         """
         end_x = self.canvas.canvasx(event.x)
         end_y = self.canvas.canvasy(event.y)
-        
         x1 = min(self.start_x, end_x)
         y1 = min(self.start_y, end_y)
         x2 = max(self.start_x, end_x)
         y2 = max(self.start_y, end_y)
-        
         if not self.is_video:
             self.window.destroy()
-        
         if x2 - x1 > 5 and y2 - y1 > 5:
             # Map selection coordinates to absolute virtual screen coordinates
             abs_x1 = x1 + self.v_left
             abs_y1 = y1 + self.v_top
             abs_x2 = x2 + self.v_left
             abs_y2 = y2 + self.v_top
-            
             # bbox coordinates relative to virtual screen
             if self.is_video:
                 self.enter_passive_mode()
@@ -117,13 +112,11 @@ class CaptureOverlay:
         """
         # Make the recorded area (white fill) completely clear and click-through
         self.window.attributes('-transparentcolor', 'white')
-        
         # Make the rest of the window (grey part) click-through as well
         hwnd = self.window.winfo_id()
         # GWL_EXSTYLE = -20, WS_EX_TRANSPARENT = 0x20
         style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
         ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x20)
-        
         # Unbind selection events so clicks pass through to apps below
         self.canvas.unbind("<ButtonPress-1>")
         self.canvas.unbind("<B1-Motion>")
