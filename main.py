@@ -42,7 +42,6 @@ try:
 except (ImportError, AttributeError):
     pass  # psutil unavailable or not working — fall through silently
 
-
 # Simple logging for debug
 with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as _f_init:
     _f_init.write(f"\n[{datetime.datetime.now()}] Application starting...\n")
@@ -230,7 +229,7 @@ class App:
         """
         word = self.current_word
         location = self.current_location
-        is_video = (self.current_type == "video")
+        is_video = self.current_type == "video"
         
         def on_capture(img, x, y, bbox=None):
             if is_video and bbox:
@@ -242,7 +241,7 @@ class App:
             else:
                 show_action_overlay(self.root, img, x, y, on_copy,
                                     lambda i, p=None: on_upload(i, word, location, file_path=p))
-                                    
+
         self.current_overlay = CaptureOverlay(self.root, on_capture, is_video=is_video)
 
     def stop_recording(self, _event):
@@ -261,7 +260,7 @@ class App:
             self.recorder = None
             word = getattr(self, "current_word_save", None)
             location = getattr(self, "current_location_save", None)
-            
+
             show_action_overlay(self.root, None, 0, 0, on_copy,
                                 lambda i, p=None: on_upload(i, word, location, file_path=p),
                                 is_video=True, video_path=video_path)

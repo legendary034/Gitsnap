@@ -270,7 +270,7 @@ class SettingsWindow:
         tk.Label(row, text="Alt+").pack(side="left")
         key_var = tk.StringVar(value=key_val)
         tk.Entry(row, textvariable=key_var, width=3).pack(side="left")
-        
+
         tk.Label(row, text=" Type:").pack(side="left")
         type_var = tk.StringVar(value=type_val)
         ttk.Combobox(row, textvariable=type_var, values=["image", "video"],

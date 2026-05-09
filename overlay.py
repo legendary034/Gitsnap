@@ -2,7 +2,7 @@
 Module for the action overlay (Copy/Upload/Save buttons after capture).
 """
 import tkinter as tk
-from tkinter import filedialog
+import tkinter.filedialog as filedialog
 import shutil
 import win32api
 
@@ -41,8 +41,7 @@ class ActionOverlay:
                       ).pack(side=tk.LEFT, padx=2)
             tk.Button(btn_frame, text="Upload",
                       command=lambda: [self.window.destroy(), on_upload(self.img, None)]
-                      ).pack(side=tk.LEFT, padx=2)
-            
+            ).pack(side=tk.LEFT, padx=2)
         tk.Button(btn_frame, text="Cancel",
                   command=self.window.destroy).pack(side=tk.LEFT, padx=2)
 
