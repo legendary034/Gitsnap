@@ -77,9 +77,9 @@ def on_copy(img):
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
 
 
-def on_upload(img, word=None, location_name=None):
+def on_upload(img, word=None, location_name=None, file_path=None):
     def process():
-        link, error = upload_image(img, word, location_name)
+        link, error = upload_image(img, word, location_name, file_path)
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:

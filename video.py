@@ -28,10 +28,10 @@ class VideoRecorder:
             self.writer = imageio.get_writer(self.output_path, format='FFMPEG', fps=fps, codec='libvpx-vp9')
             with mss.mss() as sct:
                 monitor = {
-                    "left": self.bbox[0], 
-                    "top": self.bbox[1], 
-                    "width": self.bbox[2] - self.bbox[0], 
-                    "height": self.bbox[3] - self.bbox[1]
+                    "left": int(self.bbox[0]), 
+                    "top": int(self.bbox[1]), 
+                    "width": int(self.bbox[2] - self.bbox[0]), 
+                    "height": int(self.bbox[3] - self.bbox[1])
                 }
                 
                 while self.is_recording:
