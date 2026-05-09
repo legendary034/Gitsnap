@@ -35,7 +35,7 @@ class ActionOverlay:
 
     def save_video(self, on_copy):
         import shutil
-        dest = filedialog.asksaveasfilename(defaultextension=".webm", filetypes=[("WebM Video", "*.webm")])
+        dest = filedialog.asksaveasfilename(defaultextension=".mp4", filetypes=[("MP4 Video", "*.mp4")])
         if dest and self.video_path:
             shutil.copy2(self.video_path, dest)
             # Notify user

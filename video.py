@@ -12,7 +12,7 @@ class VideoRecorder:
         self.bbox = bbox # (left, top, right, bottom)
         self.is_recording = False
         self.thread = None
-        self.output_path = os.path.join(get_appdata_path(), f"temp_video_{uuid.uuid4().hex[:8]}.webm")
+        self.output_path = os.path.join(get_appdata_path(), f"temp_video_{uuid.uuid4().hex[:8]}.mp4")
         self.writer = None
 
     def start(self):
@@ -25,7 +25,7 @@ class VideoRecorder:
         frame_time = 1.0 / fps
         
         try:
-            self.writer = imageio.get_writer(self.output_path, format='FFMPEG', fps=fps, codec='libvpx-vp9')
+            self.writer = imageio.get_writer(self.output_path, format='FFMPEG', fps=fps, codec='libx264')
             with mss.mss() as sct:
                 monitor = {
                     "left": int(self.bbox[0]), 

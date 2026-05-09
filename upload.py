@@ -36,7 +36,7 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         b64_content = base64.b64encode(img_bytes).decode('utf-8')
 
         # Generate filename
-        ext = "webm" if file_path else "png"
+        ext = "mp4" if file_path else "png"
         prefix = "video" if file_path else "screenshot"
         filename_base = f"{prefix}_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}_{uuid.uuid4().hex[:6]}"
         if word:
