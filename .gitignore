@@ -11,7 +11,7 @@ env/
 # PyInstaller
 build/
 dist/
-# Optional: *.spec
+*.exe
 
 # Application Logs
 debug_log.txt
