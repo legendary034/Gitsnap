@@ -66,7 +66,8 @@ class CaptureOverlay:
         x2 = max(self.start_x, end_x)
         y2 = max(self.start_y, end_y)
         
-        self.window.destroy()
+        if not self.is_video:
+            self.window.destroy()
         
         if x2 - x1 > 5 and y2 - y1 > 5:
             # Map selection coordinates to absolute virtual screen coordinates
@@ -77,7 +78,28 @@ class CaptureOverlay:
             
             # bbox coordinates relative to virtual screen
             if self.is_video:
+                self.enter_passive_mode()
                 self.on_capture(None, abs_x2, abs_y2, bbox=(abs_x1, abs_y1, abs_x2, abs_y2))
             else:
                 img = ImageGrab.grab(bbox=(abs_x1, abs_y1, abs_x2, abs_y2), all_screens=True)
                 self.on_capture(img, abs_x2, abs_y2, bbox=None)
+        else:
+            if self.is_video:
+                self.window.destroy()
+
+    def enter_passive_mode(self):
+        # Make the recorded area (white fill) completely clear and click-through
+        self.window.attributes('-transparentcolor', 'white')
+        
+        # Make the rest of the window (grey part) click-through as well
+        hwnd = self.window.winfo_id()
+        # GWL_EXSTYLE = -20, WS_EX_TRANSPARENT = 0x20
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
+        ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x20)
+        
+        # Unbind selection events so clicks pass through to apps below
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonRelease-1>")
+        # Increase border thickness for better visibility during recording
+        self.canvas.itemconfig(self.rect, width=3)

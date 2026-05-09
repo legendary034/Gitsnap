@@ -114,6 +114,7 @@ class App:
         self.current_hotkey = None
         self.recorder = None
         self.active_hotkey = None
+        self.current_overlay = None
 
     def start(self):
         try:
@@ -198,9 +199,16 @@ class App:
                 show_action_overlay(self.root, img, x, y, on_copy,
                                     lambda i, p=None: on_upload(i, word, location, file_path=p))
                                     
-        CaptureOverlay(self.root, on_capture, is_video=is_video)
+        self.current_overlay = CaptureOverlay(self.root, on_capture, is_video=is_video)
 
     def stop_recording(self, event):
+        if self.current_overlay:
+            try:
+                self.current_overlay.window.destroy()
+            except:
+                pass
+            self.current_overlay = None
+
         if self.recorder and self.recorder.is_recording:
             video_path = self.recorder.stop()
             self.recorder = None
