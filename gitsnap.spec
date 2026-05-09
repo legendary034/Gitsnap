@@ -1,14 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from PyInstaller.utils.hooks import copy_metadata
+
+datas_list = [
+    ('gitsnap_icon.png', '.'),
+    ('gitsnap_icon.ico', '.'),
+]
+datas_list += copy_metadata('imageio')
+datas_list += copy_metadata('imageio_ffmpeg')
+
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('gitsnap_icon.png', '.'),
-        ('gitsnap_icon.ico', '.'),
-    ],
+    datas=datas_list,
     hiddenimports=['psutil', 'pystray', 'PIL', 'pynput', 'win11toast', 'requests', 'pyperclip', 'bs4', 'mss', 'imageio', 'imageio_ffmpeg'],
     hookspath=[],
     hooksconfig={},
