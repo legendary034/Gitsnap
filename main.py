@@ -74,6 +74,10 @@ def create_tray_icon():
 
 
 def on_copy(img):
+    if isinstance(img, str) and img == "saved_video":
+        from win11toast import toast
+        toast("Video Saved", "The recording has been saved successfully.")
+        return
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
 
 
