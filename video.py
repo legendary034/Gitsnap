@@ -12,7 +12,17 @@ class VideoRecorder:
         self.bbox = bbox # (left, top, right, bottom)
         self.is_recording = False
         self.thread = None
-        self.output_path = os.path.join(get_appdata_path(), f"temp_video_{uuid.uuid4().hex[:8]}.mp4")
+        
+        # Use C:\temp for temporary video storage as requested
+        temp_dir = "C:\\temp"
+        if not os.path.exists(temp_dir):
+            try:
+                os.makedirs(temp_dir)
+            except:
+                # Fallback to AppData if C:\temp cannot be created or accessed
+                temp_dir = get_appdata_path()
+        
+        self.output_path = os.path.join(temp_dir, f"temp_video_{uuid.uuid4().hex[:8]}.mp4")
         self.writer = None
 
     def start(self):
