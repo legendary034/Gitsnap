@@ -1,11 +1,18 @@
-import io
+"""
+Module for uploading captured images and videos to GitHub content API.
+"""
 import base64
-import requests
-import uuid
 from datetime import datetime
+import io
+import uuid
+
+import requests
 from config import load_config, get_location, DEBUG_LOG_FILE
 
 def upload_image(img, word=None, location_name=None, file_path=None):
+    """
+    Uploads an image or video file to the specified GitHub repository.
+    """
     config = load_config()
     if not config:
         return (None, "Could not load configuration.")
@@ -62,7 +69,7 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         response = requests.put(url, headers=headers, json=data, timeout=30)
 
         if response.status_code >= 400:
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"Upload failed - Status: {response.status_code}, Response: {response.text}\n")
 
             if response.status_code == 404:
@@ -76,6 +83,6 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         return (raw_url, None)
 
     except Exception as e:
-        with open(DEBUG_LOG_FILE, "a") as f:
+        with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"Upload Exception: {e}\n")
         return (None, str(e))

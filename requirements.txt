@@ -10,3 +10,4 @@ psutil
 mss
 imageio
 imageio-ffmpeg
+numpy

@@ -1,3 +1,6 @@
+"""
+Settings window and startup management for Gitsnap.
+"""
 import tkinter as tk
 from tkinter import messagebox, ttk
 import winreg
@@ -13,6 +16,9 @@ LABEL_WIDTH = 8   # label column width in location rows
 # ─────────────────────────── Registry helpers ────────────────────────────────
 
 def is_run_at_startup_enabled():
+    """
+    Checks if the application is set to run at Windows startup.
+    """
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ) as key:
             winreg.QueryValueEx(key, APP_NAME)
@@ -25,6 +31,9 @@ def is_run_at_startup_enabled():
 
 
 def set_run_at_startup(enable):
+    """
+    Enables or disables running the application at Windows startup.
+    """
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE) as key:
             if enable:
@@ -44,6 +53,9 @@ def set_run_at_startup(enable):
 # ─────────────────────────── Settings Window ─────────────────────────────────
 
 class SettingsWindow:
+    """
+    The settings window for configuring GitHub locations and hotkeys.
+    """
     def __init__(self, parent):
         self.config = load_config() or {}
 
@@ -344,4 +356,7 @@ class SettingsWindow:
 
 
 def show_settings_window(parent):
+    """
+    Convenience function to create and show the SettingsWindow.
+    """
     return SettingsWindow(parent)

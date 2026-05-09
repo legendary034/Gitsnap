@@ -1,8 +1,14 @@
+"""
+Configuration management for Gitsnap.
+"""
 import json
 import os
-import sys
 
 def get_appdata_path():
+    """
+    Returns the path to the application data directory.
+    Creates it if it does not exist.
+    """
     appdata = os.environ.get("APPDATA")
     if not appdata:
         appdata = os.path.expanduser("~")
@@ -62,6 +68,10 @@ def _migrate_old_config(data):
 
 
 def load_config():
+    """
+    Loads the configuration from the config.json file.
+    Performs auto-migration if necessary.
+    """
     if not os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
@@ -91,6 +101,9 @@ def load_config():
 
 
 def save_config(config_data):
+    """
+    Saves the configuration to the config.json file.
+    """
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=4)

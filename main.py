@@ -1,6 +1,12 @@
-import ctypes
+"""
+Main entry point for the Gitsnap application.
+Handles the tray icon, hotkeys, and overall application lifecycle.
+"""
 import os
 import sys
+import datetime
+import threading
+import tkinter as tk
 
 # ── Kill any existing Gitsnap process before starting ────────────────────────
 try:
@@ -27,8 +33,7 @@ except Exception:
 from config import DEBUG_LOG_FILE
 
 # Simple logging for debug
-with open(DEBUG_LOG_FILE, "a") as f:
-    import datetime
+with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
     f.write(f"\n[{datetime.datetime.now()}] Application starting...\n")
 
 try:
@@ -45,7 +50,7 @@ try:
     from settings import show_settings_window
     from video import VideoRecorder
 except Exception as e:
-    with open(DEBUG_LOG_FILE, "a") as f:
+    with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"Import Error: {e}\n")
     os._exit(1)
 
@@ -61,9 +66,16 @@ def _icon_path(filename):
 
 
 def create_tray_icon():
+    """
+    Creates the image for the tray icon.
+    """
     try:
         img = Image.open(_icon_path("gitsnap_icon.png")).convert("RGBA")
-        img = img.resize((64, 64), Image.LANCZOS)
+        # Use robust resampling constant access
+        resampling = getattr(Image, 'LANCZOS', getattr(Image, 'Resampling', None))
+        if hasattr(resampling, 'LANCZOS'):
+            resampling = resampling.LANCZOS
+        img = img.resize((64, 64), resampling)
         return img
     except Exception:
         # Fallback: plain blue square
@@ -74,6 +86,9 @@ def create_tray_icon():
 
 
 def on_copy(img):
+    """
+    Handles copying an image or notification to the clipboard.
+    """
     if isinstance(img, str) and img == "saved_video":
         from win11toast import toast
         toast("Video Saved", "The recording has been saved successfully.")
@@ -82,6 +97,9 @@ def on_copy(img):
 
 
 def on_upload(img, word=None, location_name=None, file_path=None):
+    """
+    Handles uploading an image to GitHub.
+    """
     def process():
         link, error = upload_image(img, word, location_name, file_path)
         if link:
@@ -93,20 +111,26 @@ def on_upload(img, word=None, location_name=None, file_path=None):
 
 
 class App:
+    """
+    Main application class for Gitsnap.
+    """
     def __init__(self):
+        """
+        Initialize the application, setting up the root window and icons.
+        """
         self.root = tk.Tk()
         self.root.withdraw()
         # Set icon for root AND all future Toplevel windows (Settings, etc.)
         try:
             from PIL import ImageTk
             _png = _icon_path("gitsnap_icon.png")
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"Icon path: {_png} exists={os.path.exists(_png)}\n")
             _pil = Image.open(_png).convert("RGBA")
             self._app_icon = ImageTk.PhotoImage(_pil)   # must stay referenced
             self.root.iconphoto(True, self._app_icon)   # True = apply to all Toplevels
         except Exception as e:
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"Icon load error: {e}\n")
         self.root.bind("<<TriggerCapture>>", self.init_capture)
         self.root.bind("<<StopRecording>>", self.stop_recording)
@@ -119,10 +143,16 @@ class App:
         self.recorder = None
         self.active_hotkey = None
         self.current_overlay = None
+        self.listener = None
+        self.current_word_save = None
+        self.current_location_save = None
 
     def start(self):
+        """
+        Starts the application, tray icon, and hotkey listener.
+        """
         try:
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write("Initializing tray icon...\n")
 
             menu = pystray.Menu(
@@ -134,17 +164,20 @@ class App:
 
             self.reload_hotkeys()
 
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write("Hotkeys active. Starting Tkinter mainloop.\n")
 
             self.root.mainloop()
         except Exception as e:
-            with open(DEBUG_LOG_FILE, "a") as f:
+            with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"Runtime Error in App.start: {e}\n")
             os._exit(1)
 
     def reload_hotkeys(self):
-        if hasattr(self, 'listener'):
+        """
+        Reloads the hotkey listener with the current configuration.
+        """
+        if self.listener:
             self.listener.stop()
 
         from config import load_config
@@ -169,6 +202,9 @@ class App:
         self.listener.start()
 
     def on_hotkey(self, word=None, location=None, hk_type="image", hotkey_str=None):
+        """
+        Callback for when a hotkey is pressed.
+        """
         if self.recorder and self.recorder.is_recording and hotkey_str == self.active_hotkey:
             self.root.event_generate("<<StopRecording>>", when="tail")
             return
@@ -179,15 +215,24 @@ class App:
         self.current_hotkey = hotkey_str
         self.root.event_generate("<<TriggerCapture>>", when="tail")
 
-    def trigger_settings(self, icon, _item):
+    def trigger_settings(self, _icon, _item):
+        """
+        Triggers the settings window to open.
+        """
         self.root.event_generate("<<OpenSettings>>", when="tail")
 
     def open_settings(self, _event):
+        """
+        Opens the settings window.
+        """
         sw = show_settings_window(self.root)
         self.root.wait_window(sw.window)
         self.reload_hotkeys()
 
-    def init_capture(self, event):
+    def init_capture(self, _event):
+        """
+        Initializes the capture overlay.
+        """
         word = self.current_word
         location = self.current_location
         is_video = (self.current_type == "video")
@@ -205,7 +250,10 @@ class App:
                                     
         self.current_overlay = CaptureOverlay(self.root, on_capture, is_video=is_video)
 
-    def stop_recording(self, event):
+    def stop_recording(self, _event):
+        """
+        Stops the current video recording.
+        """
         if self.current_overlay:
             try:
                 self.current_overlay.window.destroy()
@@ -223,7 +271,10 @@ class App:
                                 lambda i, p=None: on_upload(i, word, location, file_path=p),
                                 is_video=True, video_path=video_path)
 
-    def quit(self, icon, item):
+    def quit(self, icon, _item):
+        """
+        Quits the application.
+        """
         icon.stop()
         self.root.quit()
 

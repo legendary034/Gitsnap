@@ -1,8 +1,14 @@
+"""
+Module for the action overlay (Copy/Upload/Save buttons after capture).
+"""
 import tkinter as tk
-import win32api
 from tkinter import filedialog
+import win32api
 
 class ActionOverlay:
+    """
+    A small popup overlay with actions (Copy, Upload, Save) after a capture is made.
+    """
     def __init__(self, parent, img, x, y, on_copy, on_upload, is_video=False, video_path=None):
         self.img = img
         self.is_video = is_video
@@ -34,6 +40,9 @@ class ActionOverlay:
         tk.Button(btn_frame, text="Cancel", command=self.window.destroy).pack(side=tk.LEFT, padx=2)
 
     def save_video(self, on_copy):
+        """
+        Prompts the user to save the recorded video to a local file.
+        """
         import shutil
         dest = filedialog.asksaveasfilename(defaultextension=".mp4", filetypes=[("MP4 Video", "*.mp4")])
         if dest and self.video_path:
@@ -42,4 +51,7 @@ class ActionOverlay:
             on_copy("saved_video") # Pass a signal that it was saved
 
 def show_action_overlay(parent, img, x, y, on_copy, on_upload, is_video=False, video_path=None):
+    """
+    Convenience function to create and show an ActionOverlay.
+    """
     ActionOverlay(parent, img, x, y, on_copy, on_upload, is_video, video_path)

@@ -1,16 +1,25 @@
+"""
+Module for handling the screen capture overlay and selection.
+"""
+import ctypes
 import tkinter as tk
 from PIL import ImageGrab
-import ctypes
 import win32api
 import win32con
 
 def set_dpi_awareness():
+    """
+    Sets the process to be DPI aware to ensure correct screen coordinates on high-DPI displays.
+    """
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(2)
     except Exception:
         pass
 
 class CaptureOverlay:
+    """
+    A full-screen transparent overlay for selecting an area to capture.
+    """
     def __init__(self, parent, on_capture, is_video=False):
         self.parent = parent
         self.on_capture = on_capture
@@ -44,20 +53,35 @@ class CaptureOverlay:
         self.window.bind("<Escape>", lambda e: self.window.destroy())
 
     def show(self):
+        """
+        Placeholder for showing the overlay (currently unused as it shows on init).
+        """
         pass
 
     def on_press(self, event):
+        """
+        Handles the mouse button press event to start selection.
+        """
         self.start_x = self.canvas.canvasx(event.x)
         self.start_y = self.canvas.canvasy(event.y)
         color = 'green' if self.is_video else 'red'
-        self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline=color, width=2, fill='white')
+        self.rect = self.canvas.create_rectangle(
+            self.start_x, self.start_y, self.start_x, self.start_y,
+            outline=color, width=2, fill='white'
+        )
 
     def on_drag(self, event):
+        """
+        Handles the mouse drag event to update selection.
+        """
         cur_x = self.canvas.canvasx(event.x)
         cur_y = self.canvas.canvasy(event.y)
         self.canvas.coords(self.rect, self.start_x, self.start_y, cur_x, cur_y)
 
     def on_release(self, event):
+        """
+        Handles the mouse button release event to finalize selection.
+        """
         end_x = self.canvas.canvasx(event.x)
         end_y = self.canvas.canvasy(event.y)
         
@@ -88,6 +112,9 @@ class CaptureOverlay:
                 self.window.destroy()
 
     def enter_passive_mode(self):
+        """
+        Enters passive mode during recording, making the overlay click-through.
+        """
         # Make the recorded area (white fill) completely clear and click-through
         self.window.attributes('-transparentcolor', 'white')
         

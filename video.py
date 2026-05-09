@@ -27,7 +27,7 @@ class VideoRecorder:
         if not os.path.exists(temp_dir):
             try:
                 os.makedirs(temp_dir)
-            except Exception:
+            except OSError:
                 # Fallback to AppData if C:\temp cannot be created or accessed
                 temp_dir = get_appdata_path()
 
