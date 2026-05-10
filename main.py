@@ -138,6 +138,7 @@ class App:
         self.listener = None
         self.current_word_save = None
         self.current_location_save = None
+        self.is_capturing = False
 
     def start(self):
         """
@@ -193,6 +194,8 @@ class App:
         if not hotkeys_dict:
             hotkeys_dict['<alt>+s'] = lambda: self.on_hotkey(None, None, "image", "<alt>+s")
 
+        hotkeys_dict['<esc>'] = self.cancel_capture
+
         self.listener = keyboard.GlobalHotKeys(hotkeys_dict)
         self.listener.start()
 
@@ -200,9 +203,14 @@ class App:
         """
         Callback for when a hotkey is pressed.
         """
-        if self.recorder and self.recorder.is_recording and hotkey_str == self.active_hotkey:
-            self.root.event_generate("<<StopRecording>>", when="tail")
+        if self.recorder and self.recorder.is_recording:
+            if hotkey_str == self.active_hotkey:
+                self.root.event_generate("<<StopRecording>>", when="tail")
             return
+
+        if self.is_capturing:
+            return
+
         self.current_word = word
         self.current_location = location
         self.current_type = hk_type
@@ -227,6 +235,10 @@ class App:
         """
         Initializes the capture overlay.
         """
+        if self.is_capturing:
+            return
+        self.is_capturing = True
+
         word = self.current_word
         location = self.current_location
         is_video = self.current_type == "video"
@@ -239,10 +251,29 @@ class App:
                 self.current_location_save = location
                 self.recorder.start()
             else:
+                self.is_capturing = False
                 show_action_overlay(self.root, img, x, y, on_copy,
                                     lambda i, p=None: on_upload(i, word, location, file_path=p))
 
-        self.current_overlay = CaptureOverlay(self.root, on_capture, is_video=is_video)
+        self.current_overlay = CaptureOverlay(self.root, on_capture, self.cancel_capture, is_video=is_video)
+
+    def cancel_capture(self, _event=None):
+        """
+        Cancels the current capture or recording.
+        """
+        if self.recorder and self.recorder.is_recording:
+            self.recorder.stop()
+            self.recorder = None
+            toast("Recording Cancelled", "The video recording was cancelled.")
+        
+        if self.current_overlay:
+            try:
+                self.current_overlay.window.destroy()
+            except tk.TclError:
+                pass
+            self.current_overlay = None
+        
+        self.is_capturing = False
 
     def stop_recording(self, _event):
         """
@@ -254,6 +285,7 @@ class App:
             except tk.TclError:
                 pass
             self.current_overlay = None
+        self.is_capturing = False
 
         if self.recorder and self.recorder.is_recording:
             video_path = self.recorder.stop()

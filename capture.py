@@ -20,9 +20,10 @@ class CaptureOverlay:
     """
     A full-screen transparent overlay for selecting an area to capture.
     """
-    def __init__(self, parent, on_capture, is_video=False):
+    def __init__(self, parent, on_capture, on_cancel, is_video=False):
         self.parent = parent
         self.on_capture = on_capture
+        self.on_cancel = on_cancel
         self.is_video = is_video
 
         # Get virtual screen metrics
@@ -50,7 +51,7 @@ class CaptureOverlay:
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
-        self.window.bind("<Escape>", lambda e: self.window.destroy())
+        self.window.bind("<Escape>", lambda e: self.on_cancel())
 
     def show(self):
         """

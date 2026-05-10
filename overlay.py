@@ -44,6 +44,7 @@ class ActionOverlay:
             ).pack(side=tk.LEFT, padx=2)
         tk.Button(btn_frame, text="Cancel",
                   command=self.window.destroy).pack(side=tk.LEFT, padx=2)
+        self.window.bind("<Escape>", lambda e: self.window.destroy())
 
     def save_video(self, on_copy):
         """
