@@ -139,6 +139,7 @@ class App:
         self.current_word_save = None
         self.current_location_save = None
         self.is_capturing = False
+        self.hotkeys_paused = False
 
     def start(self):
         """
@@ -149,6 +150,8 @@ class App:
                 _f.write("Initializing tray icon...\n")
 
             menu = pystray.Menu(
+                pystray.MenuItem('Pause Hotkeys', self.toggle_pause, 
+                                 checked=lambda item: self.hotkeys_paused),
                 pystray.MenuItem('Settings', self.trigger_settings),
                 pystray.MenuItem('Quit', self.quit)
             )
@@ -203,6 +206,9 @@ class App:
         """
         Callback for when a hotkey is pressed.
         """
+        if self.hotkeys_paused:
+            return
+
         if self.recorder and self.recorder.is_recording:
             if hotkey_str == self.active_hotkey:
                 self.root.event_generate("<<StopRecording>>", when="tail")
@@ -216,6 +222,12 @@ class App:
         self.current_type = hk_type
         self.current_hotkey = hotkey_str
         self.root.event_generate("<<TriggerCapture>>", when="tail")
+
+    def toggle_pause(self, _icon, _item):
+        """
+        Toggles the hotkey pause state.
+        """
+        self.hotkeys_paused = not self.hotkeys_paused
 
     def trigger_settings(self, _icon, _item):
         """
