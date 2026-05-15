@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
-from PyInstaller.utils.hooks import copy_metadata
+from PyInstaller.utils.hooks import copy_metadata, collect_all
 
 datas_list = [
     ('gitsnap_icon.png', '.'),
@@ -10,12 +10,23 @@ datas_list = [
 datas_list += copy_metadata('imageio')
 datas_list += copy_metadata('imageio_ffmpeg')
 
+# Collect all mss files/submodules so PyInstaller bundles them reliably
+mss_datas, mss_binaries, mss_hidden = collect_all('mss')
+datas_list += mss_datas
+
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
+    binaries=mss_binaries,
     datas=datas_list,
-    hiddenimports=['psutil', 'pystray', 'PIL', 'pynput', 'win11toast', 'requests', 'pyperclip', 'bs4', 'mss', 'imageio', 'imageio_ffmpeg'],
+    hiddenimports=[
+        'psutil', 'pystray', 'PIL', 'pynput', 'win11toast',
+        'requests', 'pyperclip', 'bs4',
+        'imageio', 'imageio_ffmpeg',
+        'mss', 'mss.base', 'mss.exception', 'mss.factory',
+        'mss.models', 'mss.screenshot', 'mss.tools',
+        'mss.windows', 'mss.windows.gdi',
+    ] + mss_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

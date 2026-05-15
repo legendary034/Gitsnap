@@ -255,6 +255,8 @@ class App:
         location = self.current_location
         is_video = self.current_type == "video"
         
+        upload_cb = lambda i, p=None: on_upload(i, word, location, file_path=p)
+
         def on_capture(img, x, y, bbox=None):
             if is_video and bbox:
                 self.recorder = VideoRecorder(bbox)
@@ -263,11 +265,15 @@ class App:
                 self.current_location_save = location
                 self.recorder.start()
             else:
+                # Screenshot path: FAB already dismissed the overlay before calling
+                # on_capture — just fire on_copy with the pre-grabbed image.
                 self.is_capturing = False
-                show_action_overlay(self.root, img, x, y, on_copy,
-                                    lambda i, p=None: on_upload(i, word, location, file_path=p))
+                on_copy(img)
 
-        self.current_overlay = CaptureOverlay(self.root, on_capture, self.cancel_capture, is_video=is_video)
+        self.current_overlay = CaptureOverlay(
+            self.root, on_capture, self.cancel_capture,
+            is_video=is_video, on_upload=upload_cb
+        )
 
     def cancel_capture(self, _event=None):
         """
